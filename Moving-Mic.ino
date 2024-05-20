@@ -18,8 +18,10 @@ Copyright (C) 2017 F. Ramakers.
 //// IMPORTATION DES BIBLIOTHÈQUES ////
 
 #include <DMXSerial.h> // Gère le DMX
-#include <LiquidCrystal.h> // Gère l'écran à cristaux liquide 
-#include <LCDMenuLib2.h> // Gère le menu
+// #include <LiquidCrystal.h> // Gère l'écran à cristaux liquide 
+// #include <LCDMenuLib2.h> // Gère le menu 
+
+#define _DEBUG true
 
 
 
@@ -100,14 +102,14 @@ int DMXAdrPano = 3; // Adresse de la position panoramique
 int DMXAdrIncl = 5; // Adresse de la position panoramique
 
 /// Écran à cristaux liquide ///
-LiquidCrystal lcd(ECL_RS, ECL_EN, ECL_D4, ECL_D5, ECL_D6, ECL_D7);
+//LiquidCrystal lcd(ECL_RS, ECL_EN, ECL_D4, ECL_D5, ECL_D6, ECL_D7);
 
 
 
 //// FONCTION D'INITIALISATION ////
 void setup() {
 
-  // Déclaration des broches
+  // Initialisation des broches
   pinMode(PANO_PHASE1, OUTPUT);
   pinMode(PANO_PHASE2, OUTPUT);
   pinMode(PANO_VR1, OUTPUT);
@@ -125,26 +127,27 @@ void setup() {
   pinMode(DEL_DMX, OUTPUT);
   
   digitalWrite(DEL_ALIM, HIGH);
+ 
+  // Initialisation Serial (Port 0)
+  Serial.begin(115200);
+  Serial.println(" -- Microphone asservis -- ");
+  Serial.println("     -- Version 1.0 --     \n");
 
+  /*
   // Écran à cristaux liquide
   lcd.begin(16, 2);
   lcd.setCursor(0,0), lcd.print(" Initialisation ");
-
+  */
 
   // initialisation des moteurs 
   initialisationMoteur(PANO_PHASE1, PANO_PHASE2, PANO_VR1, PANO_VR2); // Moteur panoramique
   initialisationMoteur(INCL_PHASE1, INCL_PHASE2, INCL_VR1, INCL_VR2); // Moteur d'inclinaison
 
-  // initialisation du DMX
+  // initialisation du DMX (Port 1)
   DMXSerial.init(DMXReceiver);
 
   DMXSerial.write(DMXAdrPano, 0);
   DMXSerial.write(DMXAdrIncl, 0);
-
-  Serial.begin(115200);
-  Serial.println(" -- Microphone asservis -- ");
-  Serial.println("     -- Version 1.0 --     \n");
-
 
   // Calibration des moteurs 
   Serial.println("Calibration de l'axe panoramique...");
@@ -157,8 +160,6 @@ void setup() {
   calibrationMoteur(INCL_PHASE1, INCL_PHASE2, inclEtapePas, INCL_INTERUPT);
   Serial.println("Axe d'inclinaison calibré!\n");
   inclPosition = 0;
-
-  //avancerMoteur(PANO_PHASE1, PANO_PHASE2, 50, 2);
 }
 
 
@@ -166,89 +167,76 @@ void setup() {
 //// FONCTION DE BOUCLE ////
 void loop() {
 
+  // Reception du paquet DMX
   unsigned long lastPacket = DMXSerial.noDataSince();
-
   if (lastPacket < 500) { // Vérifie si le DMX est connecté
-    digitalWrite(DEL_DMX, HIGH);
+    digitalWrite(DEL_DMX, HIGH); // DEL d'état du DMX à ON - DMX détecté
 
     // Recalibration des moteurs
-    if (digitalRead(PANO_INTERUPT) == LOW && panoPosition != 0) {
+    if (digitalRead(PANO_INTERUPT) == LOW && (panoPosition != 0)) {
       panoPosition == 0;
-      Serial.println("Axe panoramique recalibré.");
+      if (_DEBUG) {Serial.println("Axe panoramique recalibré.");}
     }
 
     if ((digitalRead(INCL_INTERUPT) == LOW) && (inclPosition != 0)) {
       inclPosition == 0;
-      Serial.println("Axe d'inclinaison recalibré.");
+      if (_DEBUG) {Serial.println("Axe d'inclinaison recalibré.");}
     }
+
 
     // Calcul de la nouvelle position des moteurs
     signed long panoNouvPos = map(DMXSerial.read(DMXAdrPano), 0, 255, panoNivBas, panoNivHaut);
     signed long inclNouvPos = map(DMXSerial.read(DMXAdrIncl), 0, 255, inclNivBas, inclNivHaut);
 
-    // Déplacement des moteurs 
 
+    // Déplacement des moteurs 
     // Panoramique
     if (panoPosition < panoNouvPos) {
       panoEtapePas = avancerMoteur(PANO_PHASE1, PANO_PHASE2, panoEtapePas, 1, 0);
       panoPosition++;         
-      Serial.print("Position du pano: "); Serial.println(panoPosition);
+      if (_DEBUG) {Serial.print("Position du pano: "); Serial.println(panoPosition);}
     } 
     
     else if (panoPosition > panoNouvPos) {
       panoEtapePas = reculerMoteur(PANO_PHASE1, PANO_PHASE2, panoEtapePas, 1, 0);
       panoPosition--;     
-       Serial.print("Position du pano: "); Serial.println(panoPosition);
+      if (_DEBUG) {Serial.print("Position du pano: "); Serial.println(panoPosition);}
     }
 
     // Inclinaison
-    if (inclBuffer == INCL_BUFFER) {
+    if (inclBuffer == INCL_BUFFER) { 
       inclBuffer = 0;
       if (inclPosition < inclNouvPos) {
         inclEtapePas = avancerMoteur(INCL_PHASE1, INCL_PHASE2, inclEtapePas, 1, 0);
         inclPosition++;
-        Serial.print("Position du incl: "); Serial.println(inclPosition);
+        if (_DEBUG) {Serial.print("Position du incl: "); Serial.println(inclPosition);}
       } 
       
       else if (inclPosition > inclNouvPos) {
         inclEtapePas = reculerMoteur(INCL_PHASE1, INCL_PHASE2, inclEtapePas, 1, 0);
         inclPosition--;
-        Serial.print("Position du incl: "); Serial.println(inclPosition);
-      }
+        if (_DEBUG) {Serial.print("Position du incl: "), Serial.println(inclPosition);}
     }
     
     else {
       inclBuffer++;
     }
-    delay(2);
+    delay(2); // Délai de sécurité
   }
 
   else {
-    digitalWrite(DEL_DMX, LOW);
+    digitalWrite(DEL_DMX, LOW); // DEL d'état du DMX à OFF - Perte de comunication avec le DMX
+    Serial.print("signal DMX perdu...")
+
   }
 }
 
-/*
-int long changerPositionMoteur(char moteurP1, char moteurP2, int etapePas, signed long moteurPos, signed long moteurNouvPos) {
 
-  if (moteurPos < moteurNouvPos) {
-    etapePas = avancerMoteur(moteurP1, moteurP2, etapePas, 1, 0);
-    panoPosition++;
-    return etapePas;
-  }
-
-  else if (moteurPos > moteurNouvPos) {
-    etapePas = reculerMoteur(moteurP1, moteurP2, etapePas, 1, 0);
-    panoPosition--;
-    return etapePas;
-  }
-}
-*/
 
 //// FONCTION ////
 
 /// MOTEURS ///
-int avancerMoteur(char moteurP1, char moteurP2, int etapePas, signed long nbPas, int delaiPas) {  // FULL STEP MODE
+int avancerMoteur(char moteurP1, char moteurP2, int etapePas, signed long nbPas, int delaiPas) { // FULL STEP MODE  // Fait avancer les moteurs
 
   for (int i = 0; i <nbPas; i++) {  // counting makes sure the stepper will continue from last step it took (important if step method is called >1 time)
     if (etapePas < 4) {
@@ -278,7 +266,7 @@ int avancerMoteur(char moteurP1, char moteurP2, int etapePas, signed long nbPas,
   return etapePas;
 }
 
-int reculerMoteur(char moteurP1, char moteurP2, int etapePas, signed long nbPas, int delaiPas) {  // FULL STEP MODE, OPPOSITE DIRECTION
+int reculerMoteur(char moteurP1, char moteurP2, int etapePas, signed long nbPas, int delaiPas) { // FULL STEP MODE, OPPOSITE DIRECTION  // Fait reculer les moteurs 
 
   for (int i = 0; i < nbPas; i++) { 
     if (etapePas > 1) {
