@@ -36,17 +36,17 @@ const byte PANO_PHASE2 = 7;
 const byte PANO_VR1 = 4;
 const byte PANO_VR2 = 6;
 
-const byte PANO_INTERUPT = 52;
+const byte PANO_INTERUPT = 52; // Interrupteur de l'axe panoramique
 
 // MOTEUR D'INCLINAISON //
-// const byte INCL_DIS1 = ;  // Non connecté
+// const byte INCL_DIS1 = ; // Non connecté
 // const byte INCL_DIS2 = ; // Non connecté
 const byte INCL_PHASE1 = 11;
 const byte INCL_PHASE2 = 9;
 const byte INCL_VR1 = 10;
 const byte INCL_VR2 = 8;
 
-const byte INCL_INTERUPT = 53;
+const byte INCL_INTERUPT = 53;  // Interrupteur de l'axe d'inclinaison
 
 /// BROCHES DES DELS D'ÉTAT ///
 const byte DEL_ALIM = 39;
@@ -55,11 +55,12 @@ const byte DEL_DMX = 43;
 
 
 /// MOTEURS ///
-const int INCL_BUFFER = 1; // Rapport de vitesse entre le panoramique et l'inclinaison
-const int VEC_PAS_PANO = 2900;
+const int INCL_BUFFER = 1; // Rapport de vitesse les deux axes
+const int VEC_PAS_PANO = 2900; // Nombre de pas que l'axe peut faire au total (du début à la fin)
 const int VEC_PAS_INCL = 640;
 
-/// ÉCRAN À CRISTAUX LIQUIDE ///
+/* !!! NON IMPLÉMENTÉ !!!
+/// ÉCRAN À CRISTAUX LIQUIDE /// 
 const int ECL_RS = 31; // Broche RS de L'ÉCL
 const int ECL_EN = 29; // Broche EN de L'ÉCL
 
@@ -67,7 +68,7 @@ const byte ECL_D4 = 27; // Broche D4 de L'ÉCL
 const byte ECL_D5 = 25; // Broche D5 de L'ÉCL
 const byte ECL_D6 = 23; // Broche D6 de L'ÉCL
 const byte ECL_D7 = 21; // Broche D7 de L'ÉCL
-
+*/ 
 
 
 /// VARIABLES ///
